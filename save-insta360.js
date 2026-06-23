@@ -36,6 +36,122 @@ async function downloadToFile(url, headers, destPath) {
   return fs.statSync(destPath).size;
 }
 
+// ---- HLS(m3u8)保存まわり ----
+const { execFileSync } = require("child_process");
+
+const DL_HEADERS = {
+  "User-Agent":
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
+    "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+  Referer: "https://cloud-jp.insta360.com/",
+};
+
+async function fetchText(url) {
+  const r = await fetch(url, { headers: DL_HEADERS });
+  if (!r.ok) throw new Error(`HTTP ${r.status}: ${url}`);
+  return r.text();
+}
+
+async function fetchBuf(url) {
+  const r = await fetch(url, { headers: DL_HEADERS });
+  if (!r.ok) throw new Error(`HTTP ${r.status}: ${url}`);
+  return Buffer.from(await r.arrayBuffer());
+}
+
+// セグメント名/プレイリスト名を絶対URL化し、resourceKey を引き継ぐ
+function resolveWithKey(name, baseUrl, resourceKey) {
+  const u = new URL(name, baseUrl);
+  if (resourceKey && !u.searchParams.has("resourceKey")) {
+    u.searchParams.set("resourceKey", resourceKey);
+  }
+  return u.toString();
+}
+
+function hasFfmpeg() {
+  try {
+    execFileSync("ffmpeg", ["-version"], { stdio: "ignore" });
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
+// 1つのバリアント(=1レンズ)のセグメントを全部落として結合
+async function downloadVariant(variantUrl, resourceKey, outBase) {
+  const text = await fetchText(variantUrl);
+
+  if (/#EXT-X-KEY/i.test(text)) {
+    const keyLine = (text.match(/#EXT-X-KEY[^\n]*/) || [""])[0];
+    console.warn(
+      `  ⚠️ 暗号化(EXT-X-KEY)が含まれています。復号できない可能性があります:\n    ${keyLine}`
+    );
+  }
+
+  const lines = text.split(/\r?\n/);
+  const mapMatch = text.match(/#EXT-X-MAP:URI="([^"]+)"/i);
+  const segments = lines.filter((l) => l && !l.startsWith("#"));
+
+  // init セグメント + 各メディアセグメント
+  const parts = [];
+  if (mapMatch) parts.push(mapMatch[1]);
+  parts.push(...segments);
+
+  console.log(`  セグメント数: ${parts.length}（init含む）`);
+
+  const rawPath = `${outBase}.m4s`;
+  const ws = fs.createWriteStream(rawPath);
+
+  // 順序を保ちつつ少し並列で取得（8個ずつのバッチ）
+  const BATCH = 8;
+  let done = 0;
+  for (let i = 0; i < parts.length; i += BATCH) {
+    const chunk = parts.slice(i, i + BATCH);
+    const bufs = await Promise.all(
+      chunk.map((name) => fetchBuf(resolveWithKey(name, variantUrl, resourceKey)))
+    );
+    for (const b of bufs) ws.write(b);
+    done += chunk.length;
+    process.stdout.write(`\r  ダウンロード: ${done}/${parts.length}`);
+  }
+  ws.end();
+  await new Promise((res, rej) => ws.on("finish", res).on("error", rej));
+  process.stdout.write("\n");
+
+  // ffmpeg があれば mp4 に変換
+  if (hasFfmpeg()) {
+    const mp4Path = `${outBase}.mp4`;
+    execFileSync("ffmpeg", ["-y", "-i", rawPath, "-c", "copy", mp4Path], {
+      stdio: "ignore",
+    });
+    fs.unlinkSync(rawPath);
+    return mp4Path;
+  }
+  return rawPath; // ffmpegが無ければ生の .m4s を残す
+}
+
+// master.m3u8 から全レンズを保存
+async function downloadHls(masterUrl, resourceKey) {
+  console.log(`\nHLS(m3u8)を検出。全セグメントをダウンロードします。`);
+  const masterText = await fetchText(masterUrl);
+
+  // master 内のバリアントプレイリスト(.m3u8) を抽出。無ければ master 自体をメディアプレイリスト扱い
+  let variants = masterText
+    .split(/\r?\n/)
+    .filter((l) => l && !l.startsWith("#") && /\.m3u8/i.test(l));
+  if (variants.length === 0) variants = [masterUrl];
+
+  const saved = [];
+  for (let i = 0; i < variants.length; i++) {
+    const vUrl = resolveWithKey(variants[i], masterUrl, resourceKey);
+    console.log(`\n[ストリーム ${i}] ${variants[i]}`);
+    const outBase = path.join(OUT_DIR, `insta360_stream${i}`);
+    const out = await downloadVariant(vUrl, resourceKey, outBase);
+    saved.push(out);
+    console.log(`  保存: ${out}`);
+  }
+  return saved;
+}
+
 (async () => {
   const shareUrl = process.argv[2];
   if (!shareUrl) {
@@ -136,11 +252,38 @@ async function downloadToFile(url, headers, destPath) {
 
   const [bestUrl] = sorted[0];
 
-  if (/\.m3u8/i.test(bestUrl)) {
+  // m3u8(HLS)が見つかった場合は自動でセグメント結合保存する
+  if (sorted.some(([u]) => /\.m3u8/i.test(u))) {
+    // resourceKey を持つ候補から鍵を取り出す
+    let resourceKey = null;
+    for (const [u] of sorted) {
+      const rk = new URL(u).searchParams.get("resourceKey");
+      if (rk) {
+        resourceKey = rk;
+        break;
+      }
+    }
+    // master プレイリストを優先（無ければ resourceKey 付き m3u8、それも無ければ先頭の m3u8）
+    const m3u8s = sorted.map(([u]) => u).filter((u) => /\.m3u8/i.test(u));
+    const masterUrl =
+      m3u8s.find((u) => /master/i.test(u) && u.includes("resourceKey")) ||
+      m3u8s.find((u) => /master/i.test(u)) ||
+      m3u8s.find((u) => u.includes("resourceKey")) ||
+      m3u8s[0];
+
+    if (!hasFfmpeg()) {
+      console.warn(
+        "\n⚠️ ffmpeg が見つかりません。生の .m4s で保存します。\n" +
+          "   mp4 にするには ffmpeg をインストールしてください（Mac: brew install ffmpeg）。"
+      );
+    }
+
+    const saved = await downloadHls(masterUrl, resourceKey);
+    console.log("\n完了！ 以下を保存しました:");
+    saved.forEach((p) => console.log("  - " + p));
     console.log(
-      "\n検出できたのが m3u8(HLSストリーミング)のみでした。\n" +
-        "この場合は ffmpeg で結合保存できます:\n" +
-        `  ffmpeg -i "${bestUrl}" -c copy downloads/output.mp4\n`
+      "\n※ Insta360の360度カメラは前後2つのレンズ映像(stream0 / stream1)に分かれています。\n" +
+        "  通常の動画として見るならどちらかを再生、正式な360度編集は Insta360 Studio に取り込んでください。"
     );
     process.exit(0);
   }
