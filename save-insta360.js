@@ -49,7 +49,7 @@ async function downloadToFile(url, headers, destPath) {
 
   console.log("ブラウザを起動します...");
   const browser = await puppeteer.launch({
-    headless: "new",
+    headless: true,
     ignoreHTTPSErrors: true, // プロキシ環境などで証明書エラーを回避
     acceptInsecureCerts: true,
     args: ["--no-sandbox", "--disable-setuid-sandbox"],
