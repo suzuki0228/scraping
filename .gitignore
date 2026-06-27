@@ -142,3 +142,6 @@ dist
 .svelte-kit
 
 # End of https://www.toptal.com/developers/gitignore/api/node
+# 収集ツールの出力（JSON/ダウンロード物）は追跡しない。レポート(.md)は残す
+reports/*.json
+reports/edinet/

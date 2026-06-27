@@ -1,15 +1,24 @@
 {
-  "name": "game-automation",
+  "name": "profitable-business-research",
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
+    "edinet": "node src/cli.js edinet",
+    "ir": "node src/cli.js ir",
+    "help": "node src/cli.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [],
+  "keywords": [
+    "research",
+    "scraping",
+    "edinet",
+    "ir",
+    "saas"
+  ],
   "author": "",
   "license": "ISC",
   "dependencies": {
     "puppeteer": "^19.11.1"
   },
-  "description": ""
+  "description": "営業利益ベースで『儲かっている会社』を調べ尽くすための調査フレームワークと収集ツール（Web系）"
 }
