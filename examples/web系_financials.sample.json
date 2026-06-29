@@ -1,0 +1,8 @@
+[
+  { "name": "手間いらず", "secCode": "2477", "netSales": 2360000000, "operatingIncome": 1640000000 },
+  { "name": "カカクコム", "secCode": "2371", "netSales": 66000000000, "operatingIncome": 26000000000 },
+  { "name": "エムスリー", "secCode": "2413", "netSales": 261000000000, "operatingIncome": 52000000000 },
+  { "name": "eWeLL", "secCode": "5038", "netSales": 3000000000, "operatingIncome": 930000000 },
+  { "name": "トヨクモ", "secCode": "4058", "netSales": 3000000000, "operatingIncome": 720000000 },
+  { "name": "ラクス", "secCode": "3923", "netSales": 47000000000, "operatingIncome": 7000000000 }
+]

@@ -47,6 +47,29 @@ node index.js ir --url https://example.com/pricing --url https://example.com/cas
 > ⚠️ マーケ情報は誇張前提。導入社数は「デモ含む」等の可能性があり、割り引いて評価する。
 > ⚠️ 各サイトの robots.txt / 利用規約を確認し、過度なアクセスをしない（`POLITE_DELAY_MS` で間隔調整可）。
 
+### 営業利益率ランキングを生成
+
+財務データ JSON から営業利益・営業利益率ランキングと、足切り判定（§0: 目標×10）を出す。
+
+```bash
+node index.js rank --input examples/web系_financials.sample.json --target 30000000
+```
+
+- 入力 JSON: `[{ "name", "secCode", "netSales"(売上高), "operatingIncome"(営業利益) }]`
+- `--target`（円）を渡すと「目標営業利益の10倍を稼ぐ会社が何社あるか」を自動判定
+- 出力: `reports/ranking_<date>.json` と `.md`（営業利益順 / 営業利益率順）
+- サンプル入力: `examples/web系_financials.sample.json`（参照値・要検証）
+
+### EDINET CSV から財務数値を取り出す（ランキングの入力作り）
+
+EDINET の書類CSV（`edinet.downloadCsv(docID, outDir)` で type=5 のZIPを取得→ `unzip` で展開）を
+`src/edinet-csv.js` でパースすると売上高・営業利益が取れる。これを `rank` の入力に流し込む。
+
+```js
+const { parseFinancialsFromFile } = require("./src/edinet-csv");
+const fin = parseFinancialsFromFile("path/to/extracted.csv"); // { netSales, operatingIncome }
+```
+
 ## 環境変数
 
 | 変数 | 既定 | 説明 |
@@ -61,8 +84,10 @@ node index.js ir --url https://example.com/pricing --url https://example.com/cas
 
 | ファイル | 役割 |
 |---|---|
-| `cli.js` | CLI エントリ（`edinet` / `ir` サブコマンド） |
+| `cli.js` | CLI エントリ（`edinet` / `ir` / `rank` サブコマンド） |
 | `edinet.js` | EDINET API v2 クライアント（チャネル1） |
+| `edinet-csv.js` | EDINET 書類CSVから売上高・営業利益を抽出 |
 | `ir-scraper.js` | 汎用 IR/LP スクレイパー（チャネル4） |
+| `ranking.js` | 営業利益・営業利益率ランキング生成＋足切り判定 |
 | `config.js` | 設定（環境変数で上書き） |
 | `util.js` | 共通ユーティリティ |

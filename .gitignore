@@ -145,3 +145,4 @@ dist
 # 収集ツールの出力（JSON/ダウンロード物）は追跡しない。レポート(.md)は残す
 reports/*.json
 reports/edinet/
+reports/ranking_*.md

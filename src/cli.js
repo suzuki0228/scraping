@@ -10,8 +10,10 @@
  * 詳細は docs/儲かっている会社_調査フレームワーク.md を参照。
  */
 
+const fs = require("fs");
 const edinet = require("./edinet");
 const ir = require("./ir-scraper");
+const ranking = require("./ranking");
 const config = require("./config");
 const { writeOut, fmtDate } = require("./util");
 
@@ -37,7 +39,12 @@ function help() {
   node src/cli.js ir --url <URL> [--url <URL> ...]
       チャネル4: IR/LP/料金ページから単価・導入社数・訴求文を収集。
 
-  出力は ${config.outDir}/ に JSON で保存される。
+  node src/cli.js rank --input <financials.json> [--target <円>]
+      財務データJSON([{name,secCode,netSales,operatingIncome}])から
+      営業利益・営業利益率ランキングを生成。--target で目標営業利益を渡すと
+      「目標×10」の足切り判定(§0)も出す。
+
+  出力は ${config.outDir}/ に JSON / Markdown で保存される。
 `);
 }
 
@@ -63,6 +70,23 @@ async function runIr(args) {
   console.log(`[ir] 完了 → ${p}`);
 }
 
+async function runRank(args) {
+  if (!args.input) {
+    console.error("--input <financials.json> を指定してください");
+    process.exit(1);
+  }
+  const rows = JSON.parse(fs.readFileSync(args.input, "utf8"));
+  const result = ranking.buildRanking(rows, {
+    targetOperatingIncome: args.target ? Number(args.target) : 0,
+  });
+  const stamp = fmtDate(new Date());
+  const md = ranking.toMarkdown(result);
+  const pJson = writeOut(config.outDir, `ranking_${stamp}.json`, result);
+  const pMd = writeOut(config.outDir, `ranking_${stamp}.md`, md);
+  console.log(md);
+  console.log(`[rank] → ${pJson}\n[rank] → ${pMd}`);
+}
+
 async function main() {
   const argv = process.argv.slice(2);
   const args = parseArgs(argv);
@@ -73,6 +97,8 @@ async function main() {
       return runEdinet(args);
     case "ir":
       return runIr(args);
+    case "rank":
+      return runRank(args);
     default:
       help();
   }

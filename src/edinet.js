@@ -122,10 +122,19 @@ async function searchByCompany(fromDate, toDate, companyKeyword) {
   return results;
 }
 
+/**
+ * 書類のCSV(type=5, ZIP)をダウンロードする。
+ * 展開後のCSVは src/edinet-csv.js でパースできる（売上高・営業利益）。
+ */
+async function downloadCsv(docID, outDir) {
+  return downloadDocument(docID, outDir, 5);
+}
+
 module.exports = {
   listDocuments,
   filterAnnualReports,
   filterByFilerName,
   downloadDocument,
+  downloadCsv,
   searchByCompany,
 };
