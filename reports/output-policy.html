@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>成果物の出力方針 — 「HTMLしか読まない」</title>
+<style>
+  :root{
+    --bg:#f4f5f7; --card:#ffffff; --ink:#0f1a2b; --muted:#5b6472;
+    --line:#e4e7ec; --old:#8a93a5; --old-bg:#fdeef0; --old-ink:#b4283b;
+    --new:#159a86; --new-bg:#e7f7f3; --new-ink:#0e7562;
+    --accent:#ff2d55;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#0d1117; --card:#161b22; --ink:#e8edf4; --muted:#9aa4b2;
+      --line:#2a313c; --old-bg:#2a1a1e; --old-ink:#ff7b8c;
+      --new-bg:#123029; --new-ink:#4fd6bd; }
+  }
+  :root[data-theme="dark"]{ --bg:#0d1117; --card:#161b22; --ink:#e8edf4; --muted:#9aa4b2;
+      --line:#2a313c; --old-bg:#2a1a1e; --old-ink:#ff7b8c; --new-bg:#123029; --new-ink:#4fd6bd; }
+  :root[data-theme="light"]{ --bg:#f4f5f7; --card:#ffffff; --ink:#0f1a2b; --muted:#5b6472;
+      --line:#e4e7ec; --old-bg:#fdeef0; --old-ink:#b4283b; --new-bg:#e7f7f3; --new-ink:#0e7562; }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,"Hiragino Kaku Gothic ProN","Noto Sans JP",Meiryo,sans-serif;
+    line-height:1.7;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:920px;margin:0 auto;padding:32px 20px 64px}
+  header{border-top:4px solid var(--accent);padding-top:20px;margin-bottom:8px}
+  h1{font-size:26px;margin:0 0 4px;letter-spacing:.01em}
+  .sub{color:var(--muted);font-size:14px;margin:0 0 28px}
+  .grid{display:grid;grid-template-columns:1fr 44px 1fr;gap:16px;align-items:stretch}
+  @media(max-width:680px){.grid{grid-template-columns:1fr;gap:12px}.arrow{transform:rotate(90deg);margin:0 auto}}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:0 0 18px;overflow:hidden}
+  .cap{color:#fff;font-weight:700;text-align:center;padding:12px;font-size:15px}
+  .cap.old{background:var(--old)} .cap.new{background:var(--new)}
+  ul{margin:14px 18px 6px;padding-left:18px} li{margin:6px 0;font-size:14.5px}
+  .pill{margin:14px 16px 0;border-radius:10px;text-align:center;padding:12px 10px;font-weight:700}
+  .pill.old{background:var(--old-bg);color:var(--old-ink)}
+  .pill.new{background:var(--new-bg);color:var(--new-ink)}
+  .pill small{display:block;font-weight:400;color:var(--muted);margin-top:4px;font-size:12.5px}
+  .arrow{display:flex;align-items:center;justify-content:center}
+  .note{color:var(--muted);font-size:13px;margin-top:22px}
+  h2{font-size:18px;margin:40px 0 10px;padding-top:20px;border-top:1px solid var(--line)}
+  .row{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+  button{background:var(--new);color:#fff;border:0;border-radius:8px;padding:8px 16px;font-size:13px;
+    font-weight:600;cursor:pointer} button:active{transform:translateY(1px)}
+  pre{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px;
+    overflow-x:auto;font-size:12.5px;line-height:1.6;
+    font-family:"SF Mono",Menlo,Consolas,"Noto Sans Mono CJK JP",monospace;color:var(--ink)}
+  code{white-space:pre}
+  .path{font-family:monospace;background:var(--new-bg);color:var(--new-ink);padding:2px 7px;border-radius:6px;font-size:13px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>成果物の出力方針 ―「HTMLしか読まない」</h1>
+    <p class="sub">全プロジェクト共通ルール ／ 認知負荷対策</p>
+  </header>
+
+  <div class="grid">
+    <div class="card">
+      <div class="cap old">従来: 文章ログを読む</div>
+      <ul>
+        <li>1アカウント 4〜8窓のテキストを追う</li>
+        <li>窓が増えるほど読む量が爆発</li>
+        <li>「ここ何やってたっけ?」の復帰コスト大</li>
+        <li>サブスク切替時のスイッチングコスト</li>
+      </ul>
+      <div class="pill old">人間がボトルネックになる<small>前回の限定開放で痛感した反省点</small></div>
+    </div>
+
+    <div class="arrow" aria-hidden="true">
+      <svg width="40" height="40" viewBox="0 0 40 40"><path d="M6 20h20M22 12l10 8-10 8" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+
+    <div class="card">
+      <div class="cap new">今回: 成果物を HTML 化</div>
+      <ul>
+        <li><strong>報告は全部 HTML + SVG + 画像で受ける</strong></li>
+        <li>直感的に「見て」判断できる</li>
+        <li>HTMLプレビュー = 作業の引き継ぎ資料</li>
+        <li>待ち時間に別ラインをどんどん進められる</li>
+      </ul>
+      <div class="pill new">並列数を上げても捌ける<small>公式も HTML プレビュー活用を推奨</small></div>
+    </div>
+  </div>
+
+  <p class="note">補足: 1アカウント運用で文章を読む余裕があるなら Markdown でもOK。多窓・多アカウントで効いてくる対策。</p>
+
+  <h2>導入状況</h2>
+  <ul style="margin-left:0">
+    <li><span class="path">~/.claude/CLAUDE.md</span> … 全プロジェクト共通の方針として設定済み（このセッション環境）</li>
+    <li><span class="path">scraping/CLAUDE.md</span> … 本リポジトリの規約として追加・コミット・プッシュ済み</li>
+  </ul>
+
+  <h2>ローカルへ恒久反映するための貼り付け用テキスト</h2>
+  <div class="row">
+    <p class="sub" style="margin:0">お手元マシンの <span class="path">~/.claude/CLAUDE.md</span> に貼れば、どのプロジェクトでも常時有効になります。</p>
+    <button id="copy">内容をコピー</button>
+  </div>
+  <pre><code id="policy">＃ 成果物の出力方針（全プロジェクト共通）
+
+＃＃ 原則:「HTMLしか読まない」
+作業の報告・成果物は、原則として自己完結型の HTML ファイルとして出力する。
+CSS / JS / 画像は inline または data URI で埋め込み、図解は SVG で描く。
+外部ファイルへの依存をなくし、プレビューで「見て」判断できる形にする。
+長文のテキストログを追わせない。
+
+＃＃ なぜこうするか
+- 従来: 文章ログを読む運用だと、窓やアカウントが増えるほど読む量が
+  爆発し、人間がボトルネックになる。
+- 今回: 成果物を HTML 化すると、直感的に「見て」判断でき、HTML
+  プレビューがそのまま引き継ぎ資料になる。並列数を上げても捌ける。
+
+＃＃ 具体的なやり方
+- 調査 / レポート / 比較 / ダッシュボードは、単一の自己完結 HTML で出力する。
+- 図解は SVG、スクリーンショットや生成画像は img（data URI 埋め込み）で表示。
+- Claude Code on the web では Artifact として公開し、プレビューで見られるようにする。
+- 成果物は各プロジェクトの output/ や reports/ 等にも保存し、引き継げるようにする。
+
+＃＃ 例外・補足
+- 1 アカウント運用など、テキストを読む余裕がある単純作業なら Markdown でもよい。
+- 多窓・多アカウント・並列作業では、HTML 出力を徹底する。</code></pre>
+
+  <p class="note">※ 上のブロックの全角「＃」は、貼り付け後に半角「#」へ置き換えてください（Markdown 見出しの体裁維持のための表示用エスケープです）。コピーボタンは自動で半角に変換します。</p>
+</div>
+
+<script>
+  document.getElementById('copy').addEventListener('click',function(){
+    var t=document.getElementById('policy').innerText.replace(/＃/g,'#');
+    navigator.clipboard.writeText(t).then(function(){
+      var b=document.getElementById('copy');b.textContent='コピーしました ✓';
+      setTimeout(function(){b.textContent='内容をコピー';},1600);
+    });
+  });
+</script>
+</body>
+</html>
